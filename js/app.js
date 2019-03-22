@@ -135,18 +135,15 @@ function decodeRows(columns, headers, dataset, callback, ret) {
   } else {
     var retArr = ret;
   }
-  var thisRow = dataset[0];
-  var meta = {};
-  for (var j = 0; j < columns.length; j++) {
-    if (headers.indexOf(columns[j].fieldName) > -1) {
-      meta[columns[j].fieldName] = thisRow[j].formattedValue;
-    }
+  for (var r = 0; r < dataset.length; r++) {
+	  var thisRow = dataset[r];
+	  var meta = {};
+	  for (var j = 0; j < columns.length; j++) {
+		if (headers.indexOf(columns[j].fieldName) > -1) {
+		  meta[columns[j].fieldName] = thisRow[j].formattedValue;
+		}
+	  }
+	  retArr.push(meta);
   }
-  retArr.push(meta);
-  dataset.splice(0,1);
-  if (dataset.length == 0) {
-    callback(retArr);
-  } else {
-    decodeRows(columns, headers, dataset, callback, retArr);
-  }
+  callback(retArr);
 }
