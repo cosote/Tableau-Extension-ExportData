@@ -53,7 +53,7 @@ $(document).ready(function () {
 });
 
 function configure() {
-  const popupUrl = `${window.location.origin}/configure.html`;
+  const popupUrl = `${window.location}/../configure.html`;
   tableau.extensions.ui.displayDialogAsync(popupUrl, 'Payload Message', { height: 500, width: 500 }).then((closePayload) => {
 
   }).catch((error) => {
@@ -68,7 +68,7 @@ function configure() {
 }
 
 function exportToWindow() {
-  const popupUrl = `${window.location.origin}/summary.html`;
+  const popupUrl = `${window.location}/../summary.html`;
   tableau.extensions.ui.displayDialogAsync(popupUrl, 'Payload Message', { height: 500, width: 800 }).then((closePayload) => {
 
   }).catch((error) => {
