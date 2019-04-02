@@ -148,7 +148,6 @@ function exportToPostMessage() {
   target.postMessage({ type: `${prefix}BEGIN`}, targetUrl);
   func.getMeta(function(meta) {
     console.log("Got Meta", meta);
-    target.postMessage({ type: `${prefix}START`}, targetUrl);
     var worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
     var totalSheets = sheetCount = 0;
     var sheetList = [];
@@ -163,6 +162,7 @@ function exportToPostMessage() {
     for (var i = 0; i < worksheets.length; i++) {
       var sheet = worksheets[i];
       if (sheetList.indexOf(sheet.name) > -1) {
+        target.postMessage({ type: `${prefix}START`, sheet: sheet.name}, targetUrl);
         sheet.getSummaryDataAsync({ignoreSelection: true}).then((data) => {
           var headers = [];
           var columns = data.columns;
@@ -173,9 +173,8 @@ function exportToPostMessage() {
             }
           }
           decodeRows(columns, headers, data.data, function(rows) {
-            var sheetname = sheetList[sheetCount];
-            console.log(`Posting sheet '${sheetname}' with ${rows.length} rows to '${targetDef}'`, rows, target);
-            target.postMessage({ type: `${prefix}DONE`, value: rows, sheet: sheetname}, targetUrl);
+            console.log(`Posting sheet '${sheet.name}' with ${rows.length} rows to '${targetDef}'`, rows, target);
+            target.postMessage({ type: `${prefix}DONE`, value: rows, sheet: sheet.name}, targetUrl);
           });
         });
       }
