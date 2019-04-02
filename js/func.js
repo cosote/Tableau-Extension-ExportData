@@ -1,5 +1,8 @@
 const sheetSettingsKey = 'selectedSheets';
 const buttonLabelKey = "buttonLabel";
+const postMessageKey = "postMessage";
+const postMessagePrefixKey = "postMessagePrefix";
+const postMessageTargetKey = "postMessageTarget";
 
 var func = {};
 

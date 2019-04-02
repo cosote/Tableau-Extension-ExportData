@@ -3,22 +3,19 @@ $(document).ready(function () {
 
       $('.resetBtn').click(resetSettings);
 
-      if(tableau.extensions.settings.get(buttonLabelKey)) {
-        console.log("label",tableau.extensions.settings.get(buttonLabelKey))
-        $('#button-label').val(tableau.extensions.settings.get(buttonLabelKey));
-      };
-
-      $('#button-label').on('keyup', function() {
-        tableau.extensions.settings.set(buttonLabelKey, $(this).val());
-        tableau.extensions.settings.saveAsync();
-      });
+      addSetting(buttonLabelKey, '#button-label');
+      addSetting(postMessageKey, '#postMessage');
+      addSetting(postMessagePrefixKey, '#postMessagePrefix');
+      addSetting(postMessageTargetKey, '#postMessageTarget');
 
       $('.mdc-tab').click(function() {
         $('.mdc-tab').removeClass('mdc-tab--active');
         $(this).addClass('mdc-tab--active');
         $('.mdc-card').hide();
         $('.'+$(this).attr('id')+'-card').show();
-        mdc.textField.MDCTextField.attachTo(document.querySelector('.mdc-text-field'));
+        document.querySelectorAll('.mdc-text-field').forEach(function(field) {
+          mdc.textField.MDCTextField.attachTo(field);
+        });
       });
 
       func.getMeta(function(meta) {
@@ -34,6 +31,18 @@ $(document).ready(function () {
       mdc.tabs.MDCTabBarScroller.attachTo(document.querySelector('#basic-tab-bar'));
     });
   });
+
+  function addSetting(settingKey, settingId) {
+    if(tableau.extensions.settings.get(settingKey)) {
+      console.log(`addSetting ${settingKey}`, tableau.extensions.settings.get(settingKey))
+      $(settingId).val(tableau.extensions.settings.get(settingKey));
+    };
+
+    $(settingId).on('keyup', function() {
+      tableau.extensions.settings.set(settingKey, $(this).val());
+      tableau.extensions.settings.saveAsync();
+    });
+  }
 
   function addSheets(meta, callback) {
     $('#sheetsList').html('');
@@ -145,7 +154,10 @@ $(document).ready(function () {
     func.initializeMeta(function(meta) {
       console.log("Meta built. Saving", meta);
       func.saveSettings(meta, function(settings) {
-        console.log("Settinsg reset", settings);
+        console.log("Settings reset", settings);
+        tableau.extensions.settings.set(postMessageKey, "");
+        tableau.extensions.settings.set(postMessagePrefixKey, "EXPORT_");
+        tableau.extensions.settings.set(postMessageTargetKey, "*");
         addSheets(meta, function() {
           buildColumnsForm();
         });

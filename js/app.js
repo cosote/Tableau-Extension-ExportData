@@ -1,17 +1,11 @@
 $(document).ready(function () {
 
-
-
   tableau.extensions.initializeAsync({'configure': configure}).then(function() {
     if(tableau.extensions.settings.get(buttonLabelKey)) {
       console.log("label",tableau.extensions.settings.get(buttonLabelKey))
       $('#buttonLabel').html(tableau.extensions.settings.get(buttonLabelKey));
     };
-    if (tableau.extensions.environment.context == "desktop") {
-      $('#exportBtn').click(exportToWindow);
-    } else {
-      $('#exportBtn').click(exportToExcel);
-    }
+    $('#exportBtn').click(exportTo);
     tableau.extensions.settings.addEventListener(tableau.TableauEventType.SettingsChanged, (settingsEvent) => {
       //updateExtensionBasedOnSettings(settingsEvent.newSettings)
       var existingSetting = false;
@@ -34,7 +28,7 @@ $(document).ready(function () {
         $('#buttonLabel').html(tableau.extensions.settings.get(buttonLabelKey));
       };
     });
-    console.log("Checing for existing settings");
+    console.log("Checking for existing settings");
     if(!tableau.extensions.settings.get(sheetSettingsKey)) {
       console.log("No settings exist. Initialize meta");
       $('#exportBtn').attr("disabled", "disabled");
@@ -65,6 +59,19 @@ function configure() {
         console.error(error.message);
     }
   });
+}
+
+function exportTo() {
+  if (tableau.extensions.environment.context == "desktop") {
+    exportToWindow();
+  } else {
+    var postMessage = tableau.extensions.settings.get(postMessageKey);
+    if (postMessage) {
+      exportToPostMessage();
+    } else {
+      exportToExcel();
+    }
+  }
 }
 
 function exportToWindow() {
@@ -127,6 +134,54 @@ function exportToExcel() {
       }
     // });
   })
+}
+
+function exportToPostMessage() {
+  var targetDef = tableau.extensions.settings.get(postMessageKey);
+  var target = eval(targetDef);
+  if (!target) {
+    console.error(`PostMessage target '${targetDef}' doesn't exist`);
+    return;
+  }
+  var prefix = tableau.extensions.settings.get(postMessagePrefixKey);
+  var targetUrl = tableau.extensions.settings.get(postMessageTargetKey);
+  target.postMessage({ type: `${prefix}BEGIN`}, targetUrl);
+  func.getMeta(function(meta) {
+    console.log("Got Meta", meta);
+    target.postMessage({ type: `${prefix}START`}, targetUrl);
+    var worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
+    var totalSheets = sheetCount = 0;
+    var sheetList = [];
+    var columnList = [];
+    for (var i = 0; i < meta.length; i++) {
+      if (meta[i].selected) {
+        sheetList.push(meta[i].sheetName);
+        columnList.push(meta[i].columns);
+        totalSheets = totalSheets + 1;
+      }
+    }
+    for (var i = 0; i < worksheets.length; i++) {
+      var sheet = worksheets[i];
+      if (sheetList.indexOf(sheet.name) > -1) {
+        sheet.getSummaryDataAsync({ignoreSelection: true}).then((data) => {
+          var headers = [];
+          var columns = data.columns;
+          var columnMeta = columnList[sheetCount];
+          for (var j = 0; j < columnMeta.length; j++) {
+            if (columnMeta[j].selected) {
+              headers.push(columnMeta[j].name);
+            }
+          }
+          decodeRows(columns, headers, data.data, function(rows) {
+            var sheetname = sheetList[sheetCount];
+            console.log(`Posting sheet '${sheetname}' with ${rows.length} rows to '${targetDef}'`, rows, target);
+            target.postMessage({ type: `${prefix}DONE`, value: rows, sheet: sheetname}, targetUrl);
+          });
+        });
+      }
+    }
+    target.postMessage({ type: `${prefix}END`}, targetUrl);
+  });
 }
 
 function decodeRows(columns, headers, dataset, callback, ret) {
